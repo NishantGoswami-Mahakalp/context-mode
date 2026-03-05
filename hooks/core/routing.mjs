@@ -12,6 +12,18 @@
 
 import { ROUTING_BLOCK, READ_GUIDANCE, GREP_GUIDANCE, BASH_GUIDANCE } from "../routing-block.mjs";
 
+/**
+ * Strip quoted content from a shell command so regex only matches command tokens.
+ * Removes content inside single quotes, double quotes, and heredocs.
+ * This prevents false positives like: gh issue edit --body "text with curl in it"
+ */
+function stripQuotedContent(cmd) {
+  return cmd
+    .replace(/<<"?(\w+)"?[\s\S]*?\n\1/g, "")   // heredocs (<<EOF...EOF)
+    .replace(/'[^']*'/g, "''")                    // single-quoted strings
+    .replace(/"[^"]*"/g, '""');                   // double-quoted strings
+}
+
 // Try to import security module — may not exist
 let security = null;
 
@@ -87,8 +99,13 @@ export function routePreToolUse(toolName, toolInput, projectDir) {
 
     // Stage 2: Context-mode routing (existing behavior)
 
+    // curl/wget and inline HTTP detection.
+    // Only check command tokens, not arguments inside quotes.
+    // Strip single-quoted, double-quoted, and heredoc content before matching.
+    const stripped = stripQuotedContent(command);
+
     // curl/wget → replace with echo redirect
-    if (/(^|\s|&&|\||\;)(curl|wget)\s/i.test(command)) {
+    if (/(^|\s|&&|\||\;)(curl|wget)\s/i.test(stripped)) {
       return {
         action: "modify",
         updatedInput: {
@@ -99,9 +116,9 @@ export function routePreToolUse(toolName, toolInput, projectDir) {
 
     // inline fetch (node -e, python -c, etc.) → replace with echo redirect
     if (
-      /fetch\s*\(\s*['"](https?:\/\/|http)/i.test(command) ||
-      /requests\.(get|post|put)\s*\(/i.test(command) ||
-      /http\.(get|request)\s*\(/i.test(command)
+      /fetch\s*\(\s*['"](https?:\/\/|http)/i.test(stripped) ||
+      /requests\.(get|post|put)\s*\(/i.test(stripped) ||
+      /http\.(get|request)\s*\(/i.test(stripped)
     ) {
       return {
         action: "modify",
