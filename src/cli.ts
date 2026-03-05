@@ -57,9 +57,14 @@ const HOOK_MAP: Record<string, Record<string, string>> = {
 };
 
 async function hookDispatch(platform: string, event: string): Promise<void> {
+  // Suppress stderr — native C++ modules (better-sqlite3) emit warnings to
+  // stderr during initialization. Platforms like Claude Code interpret ANY
+  // stderr output as hook failure, even when the hook succeeds. See: #68
+  // This is cross-platform (works on Windows, Linux, macOS).
+  process.stderr.write = (() => true) as typeof process.stderr.write;
+
   const scriptPath = HOOK_MAP[platform]?.[event];
   if (!scriptPath) {
-    console.error(`Unknown hook: ${platform}/${event}`);
     process.exit(1);
   }
   const pluginRoot = getPluginRoot();
