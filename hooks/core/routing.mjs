@@ -56,7 +56,7 @@ export function routePreToolUse(toolName, toolInput, projectDir) {
       return {
         action: "modify",
         updatedInput: {
-          command: 'echo "context-mode: curl/wget blocked. You MUST use mcp__plugin_context-mode_context-mode__fetch_and_index(url, source) to fetch URLs, or mcp__plugin_context-mode_context-mode__execute(language, code) to run HTTP calls in sandbox. Do NOT retry with curl/wget."',
+          command: 'echo "context-mode: curl/wget blocked. You MUST use mcp__plugin_context-mode_context-mode__ctx_fetch_and_index(url, source) to fetch URLs, or mcp__plugin_context-mode_context-mode__ctx_execute(language, code) to run HTTP calls in sandbox. Do NOT retry with curl/wget."',
         },
       };
     }
@@ -70,7 +70,7 @@ export function routePreToolUse(toolName, toolInput, projectDir) {
       return {
         action: "modify",
         updatedInput: {
-          command: 'echo "context-mode: Inline HTTP blocked. Use mcp__plugin_context-mode_context-mode__execute(language, code) to run HTTP calls in sandbox, or mcp__plugin_context-mode_context-mode__fetch_and_index(url, source) for web pages. Do NOT retry with Bash."',
+          command: 'echo "context-mode: Inline HTTP blocked. Use mcp__plugin_context-mode_context-mode__ctx_execute(language, code) to run HTTP calls in sandbox, or mcp__plugin_context-mode_context-mode__ctx_fetch_and_index(url, source) for web pages. Do NOT retry with Bash."',
         },
       };
     }
@@ -94,12 +94,12 @@ export function routePreToolUse(toolName, toolInput, projectDir) {
     const url = toolInput.url ?? "";
     return {
       action: "deny",
-      reason: `context-mode: WebFetch blocked. Use mcp__plugin_context-mode_context-mode__fetch_and_index(url: "${url}", source: "...") to fetch this URL in sandbox. Then use mcp__plugin_context-mode_context-mode__search(queries: [...]) to query results. Do NOT use curl/wget — they are also blocked.`,
+      reason: `context-mode: WebFetch blocked. Use mcp__plugin_context-mode_context-mode__ctx_fetch_and_index(url: "${url}", source: "...") to fetch this URL in sandbox. Then use mcp__plugin_context-mode_context-mode__ctx_search(queries: [...]) to query results. Do NOT use curl/wget — they are also blocked.`,
     };
   }
 
-  // ─── Task: inject context-mode routing into subagent prompts ───
-  if (toolName === "Task") {
+  // ─── Agent/Task: inject context-mode routing into subagent prompts ───
+  if (toolName === "Agent" || toolName === "Task") {
     const subagentType = toolInput.subagent_type ?? "";
     const prompt = toolInput.prompt ?? "";
 

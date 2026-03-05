@@ -84,7 +84,7 @@ try {
       writeFileSync(ipPath, JSON.stringify(ip, null, 2) + "\n", "utf-8");
     }
 
-    // 3. Update hook path in settings.json
+    // 3. Update hook path + matcher in settings.json
     const settingsPath = resolve(homedir(), ".claude", "settings.json");
     try {
       const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
@@ -92,6 +92,11 @@ try {
       if (Array.isArray(hooks)) {
         let changed = false;
         for (const entry of hooks) {
+          // Fix deprecated Task-only matcher → Agent|Task
+          if (entry.matcher && entry.matcher.includes("Task") && !entry.matcher.includes("Agent")) {
+            entry.matcher = entry.matcher.replace("Task", "Agent|Task");
+            changed = true;
+          }
           for (const h of (entry.hooks || [])) {
             if (h.command?.includes("pretooluse.mjs") && !h.command.includes(targetDir)) {
               h.command = "node " + resolve(targetDir, "hooks", "pretooluse.mjs");
