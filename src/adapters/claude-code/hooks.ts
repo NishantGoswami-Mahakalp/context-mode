@@ -86,14 +86,19 @@ export const OPTIONAL_HOOKS: HookType[] = [
 
 /**
  * Check if a hook entry points to a context-mode hook script.
+ * Matches both legacy format (node .../pretooluse.mjs) and
+ * CLI dispatcher format (context-mode hook claude-code pretooluse).
  */
 export function isContextModeHook(
   entry: { hooks?: Array<{ command?: string }> },
   hookType: HookType,
 ): boolean {
   const scriptName = HOOK_SCRIPTS[hookType];
+  const cliCommand = buildHookCommand(hookType);
   return (
-    entry.hooks?.some((h) => h.command?.includes(scriptName)) ?? false
+    entry.hooks?.some((h) =>
+      h.command?.includes(scriptName) || h.command?.includes(cliCommand),
+    ) ?? false
   );
 }
 
