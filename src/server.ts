@@ -24,6 +24,7 @@ import {
   hasBunRuntime,
 } from "./runtime.js";
 import { classifyNonZeroExit } from "./exit-classify.js";
+import { startLifecycleGuard } from "./lifecycle.js";
 const VERSION = "1.0.18";
 
 // Prevent silent server death from unhandled async errors
@@ -1731,6 +1732,9 @@ async function main() {
   process.on("exit", shutdown);
   process.on("SIGINT", () => { gracefulShutdown(); });
   process.on("SIGTERM", () => { gracefulShutdown(); });
+
+  // Lifecycle guard: detect parent death + stdin close to prevent orphaned processes (#103)
+  startLifecycleGuard({ onShutdown: () => gracefulShutdown() });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
