@@ -130,6 +130,9 @@ interface BeforeModelResolveEvent {
 interface AfterToolCallEvent {
   toolName?: string;
   params?: Record<string, unknown>;
+  /** Stable per agent turn — all tool calls in the same LLM response share a runId. */
+  runId?: string;
+  toolCallId?: string;
   /** Result payload — OpenClaw v2+ uses `result`; older builds use `output`. */
   result?: unknown;
   output?: string;
