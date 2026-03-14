@@ -449,13 +449,14 @@ export default {
       "before_compaction",
       async () => {
         try {
-          const events = db.getEvents(sessionId);
+          const sid = sessionId; // snapshot to avoid race with concurrent session_start
+          const events = db.getEvents(sid);
           if (events.length === 0) return;
-          const freshStats = db.getSessionStats(sessionId);
+          const freshStats = db.getSessionStats(sid);
           const snapshot = buildResumeSnapshot(events, {
             compactCount: (freshStats?.compact_count ?? 0) + 1,
           });
-          db.upsertResume(sessionId, snapshot, events.length);
+          db.upsertResume(sid, snapshot, events.length);
         } catch {
           // best effort — never break compaction
         }
@@ -468,7 +469,7 @@ export default {
       "after_compaction",
       async () => {
         try {
-          db.incrementCompactCount(sessionId);
+          db.incrementCompactCount(sessionId); // sessionId consistent with before_compaction within same sync cycle
         } catch {
           // best effort
         }
@@ -481,12 +482,13 @@ export default {
       "before_model_resolve",
       async (event: unknown) => {
         try {
+          const sid = sessionId; // snapshot to avoid race with concurrent session_start
           const e = event as BeforeModelResolveEvent;
           const text = e?.userMessage ?? e?.message ?? e?.content ?? "";
           if (!text) return;
           const events = extractUserEvents(text);
           for (const ev of events) {
-            db.insertEvent(sessionId, ev as import("./types.js").SessionEvent, "PostToolUse");
+            db.insertEvent(sid, ev as import("./types.js").SessionEvent, "PostToolUse");
           }
         } catch {
           // best effort — never break model resolution
